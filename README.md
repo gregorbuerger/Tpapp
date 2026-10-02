@@ -1,6 +1,11 @@
-# Tanken & Parken – Pilot v2
+# Tanken & Parken – Pilot v2.2
+
 Pilotgebiet Ottobeuren–Memmingen.
 
-Neu: Ziel-/Adresssuche, Zielmarker, Parkplätze nach Entfernung zum Ziel sortiert, echte Pilot-Parkdaten aus offiziellen Angaben/Kartendaten. Tankpreise bleiben bis zur Val-Town/Tankerkönig-Anbindung klar als Demo gekennzeichnet. Keine erfundenen Live-Belegungen.
-
-Für GitHub Pages alle Dateien im Projektroot veröffentlichen.
+## v2.2
+- Alle Demo-Tankstellen und Demo-Spritpreise entfernt.
+- Keine simulierten freien Stellplätze.
+- Parkplätze basieren auf verifizierten offiziellen Angaben für Ottobeuren und Memmingen.
+- Fehlende Live-Belegung wird ausdrücklich als nicht verfügbar angezeigt.
+- Tankstellenebene bleibt leer, bis Val Town + Tankerkönig angebunden sind.
+- Adress-/Zielsuche und Sortierung nach Entfernung bleiben erhalten.
