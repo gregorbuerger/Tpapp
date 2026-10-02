@@ -1,36 +1,28 @@
-const DEMO = [
- {id:'f1',type:'fuel',name:'Aral',lat:47.9898,lon:10.1712,e10:1.669,e5:1.729,diesel:1.589,meta:'Geöffnet · Memmingen'},
- {id:'f2',type:'fuel',name:'JET',lat:47.9818,lon:10.1819,e10:1.649,e5:1.709,diesel:1.569,meta:'Geöffnet · 24 h'},
- {id:'f3',type:'fuel',name:'AVIA',lat:48.0005,lon:10.1908,e10:1.679,e5:1.739,diesel:1.599,meta:'Geöffnet'},
- {id:'f4',type:'fuel',name:'Esso',lat:47.9739,lon:10.1658,e10:1.659,e5:1.719,diesel:1.579,meta:'Geöffnet'},
- {id:'p1',type:'parking',name:'Parkhaus Innenstadt',lat:47.9867,lon:10.1800,free:127,total:320,live:true,meta:'Live · gebührenpflichtig'},
- {id:'p2',type:'parking',name:'Parkplatz Bahnhof',lat:47.9853,lon:10.1872,free:42,total:110,live:true,meta:'Live · P+R'},
- {id:'p3',type:'parking',name:'Parkplatz Stadthalle',lat:47.9912,lon:10.1773,free:null,total:95,live:false,meta:'Kapazität 95 · keine Live-Daten'}
-];
-let mode='all', fuel='e10', markers=[], selected=null;
-const map = new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/liberty',center:[10.181,47.987],zoom:13.4,attributionControl:false});
-map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
-
-function visibleData(){return DEMO.filter(x=>mode==='all'||x.type===mode)}
-function priceText(x){return x[fuel].toFixed(3).replace('.',',')}
-function render(){
- markers.forEach(m=>m.remove()); markers=[];
- const data=visibleData(); document.getElementById('resultCount').textContent=`${data.length} Orte`;
- const cards=document.getElementById('cards'); cards.innerHTML='';
- data.forEach(x=>{
-   const el=document.createElement('div'); el.className=`marker ${x.type} ${x.live?'live':''}`; el.textContent=x.type==='fuel'?priceText(x):'P';
-   const m=new maplibregl.Marker({element:el}).setLngLat([x.lon,x.lat]).addTo(map); markers.push(m);
-   el.onclick=()=>select(x.id,true);
-   const card=document.createElement('article'); card.className='card'+(selected===x.id?' selected':''); card.dataset.id=x.id;
-   card.innerHTML=x.type==='fuel'?`<div class="card-head"><div><div class="type">⛽ Tankstelle</div><div class="name">${x.name}</div><div class="distance">${fuel.toUpperCase()}</div></div><div class="price">${priceText(x)} €<small>/l</small></div></div><div class="meta">${x.meta}</div>`:`<div class="card-head"><div><div class="type">🅿 Parken</div><div class="name">${x.name}</div><div class="distance">${x.total} Plätze gesamt</div></div><div class="availability">${x.free===null?'–':x.free}<small>${x.free===null?'':' frei'}</small></div></div><div class="meta">${x.meta}</div>`;
-   card.onclick=()=>select(x.id,false); cards.appendChild(card);
- });
-}
-function select(id,scroll){selected=id; const x=DEMO.find(v=>v.id===id); map.easeTo({center:[x.lon,x.lat],zoom:15,duration:500}); render(); if(scroll) setTimeout(()=>document.querySelector(`.card[data-id="${id}"]`)?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}),50)}
-
-document.querySelectorAll('.seg').forEach(b=>b.onclick=()=>{document.querySelectorAll('.seg').forEach(x=>x.classList.remove('active'));b.classList.add('active');mode=b.dataset.mode;document.getElementById('fuelFilter').style.display=mode==='parking'?'none':'flex';selected=null;render()});
-document.querySelectorAll('.fuel-chip').forEach(b=>b.onclick=()=>{document.querySelectorAll('.fuel-chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');fuel=b.dataset.fuel;render()});
-const searchHere=document.getElementById('searchHere'); map.on('dragend',()=>searchHere.classList.add('visible')); searchHere.onclick=()=>{searchHere.classList.remove('visible');render()};
-document.getElementById('locateBtn').onclick=()=>navigator.geolocation?.getCurrentPosition(p=>map.flyTo({center:[p.coords.longitude,p.coords.latitude],zoom:14}),()=>alert('Standort konnte nicht ermittelt werden.'));
-map.on('load',render);
-if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+const PLACES=[
+{id:'o1',type:'parking',name:'Parkplatz Basilika',lat:47.94105,lon:10.29797,total:60,fee:'Parkhinweise vor Ort',meta:'Ottobeuren · ca. 60 Stellplätze',source:'Markt Ottobeuren'},
+{id:'o2',type:'parking',name:'Tiefgarage Luitpoldstraße',lat:47.9421,lon:10.2997,total:null,fee:'kostenpflichtig',meta:'Ottobeuren · Tiefgarage',source:'Markt Ottobeuren'},
+{id:'o3',type:'parking',name:'Parkplatz Ulrichstraße',lat:47.9434,lon:10.3008,total:null,fee:'90 Min. kostenlos, danach kostenpflichtig',meta:'Ottobeuren · Lademöglichkeiten',source:'Markt Ottobeuren'},
+{id:'o4',type:'parking',name:'Parkplatz am Bannwald',lat:47.9369,lon:10.2924,total:null,fee:'kostenlos',meta:'Ottobeuren · Parkplatz',source:'Kartendaten'},
+{id:'m1',type:'parking',name:'Parkhaus Bahnhofstraße',lat:47.9856,lon:10.1870,total:334,fee:'ab 0,50 € / ½ Std.',meta:'Memmingen · 24 h',source:'Stadt Memmingen'},
+{id:'m2',type:'parking',name:'Parkhaus Krautstraße',lat:47.9867,lon:10.1788,total:null,fee:'gebührenpflichtig',meta:'Memmingen · 24 h',source:'Stadt Memmingen'},
+{id:'m3',type:'parking',name:'Tiefgarage Stadthalle',lat:47.9897,lon:10.1764,total:450,fee:'0,70 € / ½ Std. (tagsüber)',meta:'Memmingen · 24 h',source:'Stadt Memmingen'},
+{id:'m4',type:'parking',name:'Parkhaus Schwesterstraße',lat:47.9842,lon:10.1805,total:335,fee:'0,70 € / ½ Std. (tagsüber)',meta:'Memmingen',source:'Stadt Memmingen'},
+{id:'m5',type:'parking',name:'Parkhaus Neue Schranne',lat:47.9830,lon:10.1790,total:null,fee:'gebührenpflichtig',meta:'Memmingen · Innenstadt',source:'Stadt Memmingen'},
+{id:'f1',type:'fuel',name:'Tankstelle Memmingen',lat:47.9898,lon:10.1712,e10:1.669,e5:1.729,diesel:1.589,meta:'Demo-Preis · Memmingen'},
+{id:'f2',type:'fuel',name:'Tankstelle Memmingen Ost',lat:47.9818,lon:10.1919,e10:1.649,e5:1.709,diesel:1.569,meta:'Demo-Preis · Memmingen'},
+{id:'f3',type:'fuel',name:'Tankstelle Ottobeuren',lat:47.9470,lon:10.3020,e10:1.679,e5:1.739,diesel:1.599,meta:'Demo-Preis · Ottobeuren'}];
+let mode='all',fuel='e10',markers=[],selected=null,target=null,targetMarker=null,searchTimer;
+const map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/liberty',center:[10.235,47.965],zoom:11.1,attributionControl:true});
+function km(a,b,c,d){const R=6371,p=Math.PI/180,x=(c-a)*p,y=(d-b)*p;const q=Math.sin(x/2)**2+Math.cos(a*p)*Math.cos(c*p)*Math.sin(y/2)**2;return 2*R*Math.asin(Math.sqrt(q))}
+function data(){let a=PLACES.filter(x=>mode==='all'||x.type===mode);if(target)a=a.map(x=>({...x,dist:km(target.lat,target.lon,x.lat,x.lon)})).sort((a,b)=>a.dist-b.dist);return a}
+function price(x){return x[fuel].toFixed(3).replace('.',',')}
+function render(){markers.forEach(m=>m.remove());markers=[];const a=data();document.getElementById('resultCount').textContent=`${a.length} Orte`;const cards=document.getElementById('cards');cards.innerHTML='';a.forEach(x=>{const el=document.createElement('div');el.className=`marker ${x.type}`;el.textContent=x.type==='fuel'?price(x):'P';markers.push(new maplibregl.Marker({element:el}).setLngLat([x.lon,x.lat]).addTo(map));el.onclick=()=>select(x.id,true);const d=x.dist!=null?` · ${x.dist<1?Math.round(x.dist*1000)+' m':x.dist.toFixed(1).replace('.',',')+' km'} zum Ziel`:'';const card=document.createElement('article');card.className='card'+(selected===x.id?' selected':'');card.dataset.id=x.id;card.innerHTML=x.type==='fuel'?`<div class="card-head"><div><div class="type">⛽ Tankstelle</div><div class="name">${x.name}</div><div class="distance">${fuel.toUpperCase()}${d}</div></div><div class="price">${price(x)} €<small>/l</small></div></div><div class="meta">${x.meta}</div>`:`<div class="card-head"><div><div class="type">🅿 Parken</div><div class="name">${x.name}</div><div class="distance">${x.total?x.total+' Plätze':''}${d}</div></div><div class="availability">–<small> live</small></div></div><div class="meta">${x.fee} · ${x.source}</div>`;card.onclick=()=>select(x.id,false);cards.appendChild(card)})}
+function select(id,scroll){selected=id;const x=PLACES.find(v=>v.id===id);map.easeTo({center:[x.lon,x.lat],zoom:15,duration:450});render();if(scroll)setTimeout(()=>document.querySelector(`.card[data-id="${id}"]`)?.scrollIntoView({behavior:'smooth',inline:'center'}),50)}
+function setTarget(t){target=t;if(targetMarker)targetMarker.remove();const el=document.createElement('div');el.className='target-marker';el.textContent='⌖';targetMarker=new maplibregl.Marker({element:el}).setLngLat([t.lon,t.lat]).addTo(map);document.getElementById('targetInfo').classList.remove('hidden');document.getElementById('targetInfo').innerHTML=`<strong>Parken am Ziel</strong><span>${t.label}</span>`;map.flyTo({center:[t.lon,t.lat],zoom:14});mode='parking';document.querySelectorAll('.seg').forEach(b=>b.classList.toggle('active',b.dataset.mode==='parking'));document.getElementById('fuelFilter').style.display='none';render()}
+async function geocode(q){const box='10.08,48.06,10.36,47.88';const u=`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=de&viewbox=${box}&bounded=1&q=${encodeURIComponent(q)}`;const r=await fetch(u,{headers:{'Accept-Language':'de'}});if(!r.ok)throw Error();return r.json()}
+function showSuggestions(list){const s=document.getElementById('suggestions');s.innerHTML='';list.forEach(v=>{const b=document.createElement('button');b.type='button';b.textContent=v.display_name;b.onclick=()=>{s.innerHTML='';document.getElementById('addressInput').value=v.display_name.split(',').slice(0,3).join(',');setTarget({lat:+v.lat,lon:+v.lon,label:v.display_name})};s.appendChild(b)})}
+document.getElementById('addressInput').addEventListener('input',e=>{clearTimeout(searchTimer);const q=e.target.value.trim();if(q.length<3){showSuggestions([]);return}searchTimer=setTimeout(async()=>{try{showSuggestions(await geocode(q))}catch{}},650)});
+document.getElementById('addressForm').onsubmit=async e=>{e.preventDefault();const q=document.getElementById('addressInput').value.trim();if(q)try{const a=await geocode(q);if(a[0])setTarget({lat:+a[0].lat,lon:+a[0].lon,label:a[0].display_name})}catch{}};
+document.getElementById('clearSearch').onclick=()=>{document.getElementById('addressInput').value='';showSuggestions([]);target=null;if(targetMarker)targetMarker.remove();targetMarker=null;document.getElementById('targetInfo').classList.add('hidden');render()};
+document.querySelectorAll('.seg').forEach(b=>b.onclick=()=>{document.querySelectorAll('.seg').forEach(x=>x.classList.remove('active'));b.classList.add('active');mode=b.dataset.mode;document.getElementById('fuelFilter').style.display=mode==='parking'?'none':'flex';selected=null;render()});document.querySelectorAll('.fuel-chip').forEach(b=>b.onclick=()=>{document.querySelectorAll('.fuel-chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');fuel=b.dataset.fuel;render()});
+const sh=document.getElementById('searchHere');map.on('dragend',()=>sh.classList.add('visible'));sh.onclick=()=>{sh.classList.remove('visible');render()};document.getElementById('locateBtn').onclick=()=>navigator.geolocation?.getCurrentPosition(p=>map.flyTo({center:[p.coords.longitude,p.coords.latitude],zoom:14}),()=>alert('Standort konnte nicht ermittelt werden.'));map.on('load',render);if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');
