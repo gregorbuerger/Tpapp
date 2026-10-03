@@ -22,3 +22,24 @@ body.search-active .searchbox .suggestions:empty{display:none}
 .suggestions button strong{display:block;font-size:14px;line-height:1.2;font-weight:760;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .suggestions button small{display:block;margin-top:3px;font-size:11px;line-height:1.25;color:#758092;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .info-btn{border:0;width:30px;height:30px;border-radius:10px;background:rgba(255,255,255,.94);box-shadow:0 4px 16px rgba(30,41,59,.08);font-weight:800;color:#536074}.fuel-marker{width:auto;min-width:52px;height:42px;padding:4px 7px;border-radius:12px;background:#fff;color:#18212f;display:flex;flex-direction:column;line-height:1;gap:3px}.fuel-marker span{font-size:13px;font-weight:850}.fuel-marker small{font-size:8px;color:#758092}.fuel-price{font-size:18px;font-weight:850;white-space:nowrap;color:#18212f}.fuel-price small{font-size:10px;color:#758092}.detail-fuel-price{font-size:25px;font-weight:850;margin-top:10px}.detail-fuel-price small{font-size:12px;color:#758092}.info-copy{font-size:12px;line-height:1.55;color:#536074;margin-top:12px}.info-copy a{color:#416fc5;font-weight:750;text-decoration:none}.suggestions button strong,.suggestions button small{display:block}.suggestions button small{margin-top:3px;color:#7b8697}
+
+
+/* v3.2 selected markers, closed fuel state, compact detail and navigation */
+.marker.selected-marker{transform:scale(1.16);border:2px solid #273244;box-shadow:0 0 0 4px rgba(255,255,255,.92),0 8px 22px rgba(30,41,59,.28);z-index:3}
+.marker.parking.selected-marker{background:#273244;color:#fff}
+.fuel-marker.closed-fuel-marker{min-width:44px;background:#f2f3f5;color:#8a94a3;border-color:#d8dde4;opacity:.9}
+.fuel-marker.closed-fuel-marker .closed-symbol{font-size:18px;line-height:14px;color:#a34c48}
+.fuel-marker .pump-symbol{font-size:15px}
+.closed-card-label{font-size:12px;font-weight:850;color:#a34c48;background:#fff0ef;border-radius:999px;padding:6px 9px;align-self:flex-start}
+.place-detail{bottom:calc(var(--safe-bottom) + 76px);max-height:28vh;padding:13px 14px 12px}
+.place-detail.expanded{max-height:46vh}
+.place-detail .detail-title{font-size:16px}
+.place-detail .detail-row{margin-top:8px;gap:6px}
+.place-detail .detail-fuel-price{font-size:23px;margin-top:7px}
+.detail-closed{font-size:16px;font-weight:820;color:#a34c48;margin-top:8px}
+.nav-actions{display:flex;gap:7px;margin-top:10px}
+.nav-btn{flex:1;min-height:38px;border:0;border-radius:11px;background:#273244;color:#fff;font-size:12px;font-weight:780;padding:8px 10px}
+.nav-btn.preferred{box-shadow:inset 0 0 0 2px #7da2ef;background:#1f2937}
+.detail-actions{margin-top:8px!important}
+.result-dock{z-index:20}
+.place-detail{z-index:22}
