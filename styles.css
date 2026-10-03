@@ -43,3 +43,6 @@ body.search-active .searchbox .suggestions:empty{display:none}
 .detail-actions{margin-top:8px!important}
 .result-dock{z-index:20}
 .place-detail{z-index:22}
+
+/* v3.3 own-location marker and fuel retrieval time */
+.user-location-dot{width:18px;height:18px;border-radius:50%;background:#4f83ff;border:3px solid #fff;box-shadow:0 0 0 2px rgba(79,131,255,.28),0 3px 10px rgba(30,41,59,.28)}
