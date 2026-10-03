@@ -46,3 +46,6 @@ body.search-active .searchbox .suggestions:empty{display:none}
 
 /* v3.3 own-location marker and fuel retrieval time */
 .user-location-dot{width:18px;height:18px;border-radius:50%;background:#4f83ff;border:3px solid #fff;box-shadow:0 0 0 2px rgba(79,131,255,.28),0 3px 10px rgba(30,41,59,.28)}
+/* v3.4 parking type markers */
+.marker.parking-garage{border-radius:9px;border-top:4px solid #536074;font-size:11px}
+.marker.parking-underground{border-radius:9px;border-top:4px solid #273244;font-size:11px}
