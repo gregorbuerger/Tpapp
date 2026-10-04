@@ -1,20 +1,14 @@
-# Tanken & Parken v4.0
+# Tanken & Parken v4.1
 
 Mobile-first PWA für GitHub Pages.
 
-## Neu in v4.0
-- Auswahl eines Treffers aus der Ergebnisliste minimiert die Liste automatisch, bevor die kompakte Detailkarte geöffnet wird.
-- OSM-Parkplätze werden stärker nach Relevanz gefiltert: Parkhäuser, Tiefgaragen, P+R und größere öffentliche Parkplätze werden bevorzugt.
-- Straßenparkreihen, Parkbuchten und ähnliche `street_side`/`lane`-Einträge werden nicht mehr als Zielparkplätze angezeigt.
-- Wenn im 1-km-Radius relevante große Parkmöglichkeiten vorhanden sind, werden kleine OSM-Parkflächen ausgeblendet.
-- Gibt es keine größeren Anlagen, bleibt ein begrenzter Fallback auf sinnvoll benannte bzw. ausreichend große öffentliche Parkplätze erhalten.
-- Private, Kunden-, Mitarbeiter- und reine Bewohnerparkplätze bleiben weiterhin ausgeschlossen.
-- Tankerkönig-Livepreise, Navigation, Standortanzeige und die verifizierten Zusatzdaten bleiben erhalten.
-- Cache und Updateanzeige auf v4.0 aktualisiert.
-
-
-## v4.0
-- Parkplatzmarker nur noch bei belastbarer Adresse (Straße + Hausnummer).
-- Vollständige Adressen in Parkplatz- und Tankstellendetails.
-- Parkplatztyp-Marker konsistent: Parkplatz / Parkhaus / Tiefgarage.
-- Tiefgarage Luitpoldstraße: offizielle Adresse Luitpoldstraße 9; Position wird beim Start anhand der Adresse aufgelöst.
+## Neu in v4.1
+- Der zu strenge Adressfilter aus v4.0 wurde zurückgenommen.
+- Eine fehlende vollständige OSM-Adresse ist kein Ausschlussgrund mehr.
+- Verifizierte kommunale Parkplätze werden immer berücksichtigt und nicht durch den allgemeinen OSM-Filter entfernt.
+- OSM bleibt relevanzgefiltert: Parkhäuser, Tiefgaragen, P+R und größere öffentliche Parkplätze haben Vorrang.
+- Bei normalen Parkplätzen dienen Name und Kapazität als Qualitätsmerkmale; kleine Straßenparkreihen bleiben ausgeschlossen.
+- Private, Kunden-, Mitarbeiter- und Bewohnerparkplätze bleiben ausgeschlossen.
+- Fehlt eine Adresse, wird keine erfundene Adresse angezeigt; Navigation erfolgt weiterhin über die vorhandenen Koordinaten.
+- Parkplatz Ulrichstraße in Ottobeuren bleibt als verifizierter kommunaler Parkplatz sichtbar.
+- Cache und Updateanzeige auf v4.1 aktualisiert.
