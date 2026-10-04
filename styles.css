@@ -113,3 +113,15 @@ body.search-active .searchbox .suggestions:empty{display:none}
 .report-warning{margin-top:9px;padding:8px 9px;border-radius:10px;background:#fff3dc;color:#8a5a12;font-size:11px;font-weight:750}
 
 .parking-diag{font-size:11px;color:#7b8492;padding:0 2px 8px;display:none}
+
+/* v4.15: stable parking marker anchor. MapLibre owns all positioning transforms. */
+.parking-marker-anchor{width:36px;height:36px;position:relative;display:block;pointer-events:auto;}
+.parking-marker-visual{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;background:#fff;color:#273244;border:2px solid #273244;box-shadow:0 4px 14px rgba(30,41,59,.22);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif;transform:none;}
+.parking-marker-visual .parking-p{font-size:21px;font-weight:850;line-height:1;}
+.parking-marker-visual.parking-garage{border-top-width:4px;}
+.parking-marker-visual.parking-garage .parking-roof{position:absolute;left:6px;right:6px;top:4px;height:5px;border-left:2px solid currentColor;border-right:2px solid currentColor;border-top:2px solid currentColor;border-radius:3px 3px 0 0;}
+.parking-marker-visual.parking-garage .parking-p{transform:translateY(3px);}
+.parking-marker-visual.parking-underground{border-top-width:4px;}
+.parking-marker-visual .parking-underground-sign{position:absolute;right:2px;bottom:1px;width:13px;height:13px;border-radius:50%;display:grid;place-items:center;background:#273244;color:#fff;font-size:10px;font-weight:900;}
+.parking-marker-visual.is-selected{background:#273244;color:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.94),0 0 0 6px rgba(39,50,68,.32),0 8px 22px rgba(30,41,59,.28);}
+.parking-marker-visual.is-selected .parking-underground-sign{background:#fff;color:#273244;}
