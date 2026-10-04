@@ -1,4 +1,4 @@
-const CACHE='tank-park-v55';
+const CACHE='tank-park-v56';
 const ASSETS=['./index.html','./styles.css?v=5.5','./app.js?v=5.5','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
 self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())if(k!==CACHE)await caches.delete(k);await self.clients.claim()})()));
