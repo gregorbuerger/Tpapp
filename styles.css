@@ -125,3 +125,5 @@ body.search-active .searchbox .suggestions:empty{display:none}
 .parking-marker-visual .parking-underground-sign{position:absolute;right:2px;bottom:1px;width:13px;height:13px;border-radius:50%;display:grid;place-items:center;background:#273244;color:#fff;font-size:10px;font-weight:900;}
 .parking-marker-visual.is-selected{background:#273244;color:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.94),0 0 0 6px rgba(39,50,68,.32),0 8px 22px rgba(30,41,59,.28);}
 .parking-marker-visual.is-selected .parking-underground-sign{background:#fff;color:#273244;}
+/* v5.0 Parkmodul 2.0 */
+.parking-check-note{margin-top:10px;padding:9px 10px;border-radius:11px;background:#f6f7f9;color:#5f6978;font-size:11px;font-weight:650;line-height:1.35}
