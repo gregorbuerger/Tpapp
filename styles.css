@@ -49,3 +49,14 @@ body.search-active .searchbox .suggestions:empty{display:none}
 /* v3.4 parking type markers */
 .marker.parking-garage{border-radius:9px;border-top:4px solid #536074;font-size:11px}
 .marker.parking-underground{border-radius:9px;border-top:4px solid #273244;font-size:11px}
+
+/* v3.7 fixed result-sheet header; only the result list scrolls */
+.result-dock:has(.sheet-content:not(.hidden)){max-height:min(58vh,560px)}
+.sheet-content{max-height:none;overflow:hidden;padding:0 14px 14px;display:flex;flex-direction:column}
+.sheet-content.hidden{display:none!important}
+.sheet-header{flex:0 0 51px}
+.target-info{flex:0 0 auto}
+.update-status{flex:0 0 auto}
+.cards{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:1px 1px 8px;margin:0 -1px}
+.source-note{flex:0 0 auto;margin:5px 0 0;padding-top:5px;border-top:1px solid var(--line)}
+@media(min-width:700px){.result-dock:has(.sheet-content:not(.hidden)){max-height:min(62vh,620px)}}

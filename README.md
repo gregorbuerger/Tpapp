@@ -1,15 +1,11 @@
-# Tanken & Parken v3.6
+# Tanken & Parken v3.7
 
 Mobile-first PWA für GitHub Pages.
 
-## Neu in v3.6
+## Neu in v3.7
 
-- OSM-Parkplatzsuche zeigt nur noch allgemein nutzbare Parkmöglichkeiten.
-- Private und gesperrte Parkplätze werden herausgefiltert (`access=private`, `access=no`).
-- Reine Kunden-, Mitarbeiter- und Bewohner-/Permit-Parkplätze werden ebenfalls ausgeblendet, soweit OSM sie entsprechend kennzeichnet.
-- Zusätzlich werden eindeutig benannte Kunden-, Mitarbeiter- und Bewohnerparkplätze gefiltert.
-- Verifizierte öffentliche Parkplätze aus Ottobeuren/Memmingen bleiben erhalten.
-- Tankerkönig-Livepreise, Standortpunkt, Navigation und alle Funktionen aus v3.5 bleiben erhalten.
-- Cache und Updateanzeige auf v3.6 aktualisiert.
-
-Hinweis: Die Filterqualität hängt bei OSM-Daten davon ab, ob Zugangsregeln korrekt eingetragen sind. Fehlende Zugangstags werden nicht automatisch als privat interpretiert.
+- Im geöffneten Ergebnisfenster bleiben Trefferzahl, Radius/Kraftstoff, Update-/Schließen-Aktionen und der Zielbereich fest sichtbar.
+- Ausschließlich die eigentliche Ergebnisliste darunter scrollt.
+- Der Quellenhinweis bleibt am unteren Rand des Ergebnisfensters stehen.
+- Alle Funktionen aus v3.6 bleiben erhalten.
+- Cache und Updateanzeige auf v3.7 aktualisiert.
