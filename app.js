@@ -18,9 +18,10 @@ function osmParkingObject(e){
   if(['street_side','lane','on_street','on_kerb','half_on_kerb','shoulder','layby'].includes(parkingTag))return null;
   const accessTag=String(t.access||t.motor_vehicle||t.motorcar||'').toLowerCase();
   if(['private','no','customers'].includes(accessTag))return null;
-  const kind=parkingKind(t),name=t.name||t.operator||parkingKindLabel({kind}),total=t.capacity?parseInt(t.capacity,10)||null:null;
+  const kind=parkingKind(t),name=t.name||t.official_name||parkingKindLabel({kind}),total=t.capacity?parseInt(t.capacity,10)||null:null;
+  const directAddress=t['addr:full']||[t['addr:street']||t['addr:place'],t['addr:housenumber']].filter(Boolean).join(' ')||null;
   return{id:`osm-${e.type}-${e.id}`,osmType:e.type,osmId:e.id,type:'parking',kind,name,lat:+lat,lon:+lon,total,
-    address:[t['addr:street'],t['addr:housenumber']].filter(Boolean).join(' ')||null,postCode:t['addr:postcode']||'',city:t['addr:city']||t['addr:place']||'',
+    address:directAddress,postCode:t['addr:postcode']||'',city:t['addr:city']||t['addr:town']||t['addr:village']||t['addr:place']||'',
     height:t.maxheight||null,hours:osmHours(t),fee:osmFee(t),fee2:t.maxstay?`Max. Parkdauer: ${t.maxstay}`:null,
     access:t.access||t.motor_vehicle||t.motorcar||'',operator:t.operator||'',source:'OpenStreetMap',sourceUrl:`https://www.openstreetmap.org/${e.type}/${e.id}`,
     parkingTag,isEntrance:t.amenity==='parking_entrance'}
