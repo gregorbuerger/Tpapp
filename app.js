@@ -28,7 +28,7 @@ function mergeParking(){return osmParking}
 function parkingPriority(x){if(x.kind==='garage'||x.kind==='underground')return 0;return 1}
 function parkingData(){let a=mergeParking();if(target)a=a.map(x=>({...x,dist:km(target.lat,target.lon,x.lat,x.lon)})).filter(x=>x.dist<=PARK_RADIUS_KM);return a.sort((a,b)=>parkingPriority(a)-parkingPriority(b)||(a.dist??999)-(b.dist??999))}
 const PARK_SOURCE='parking-v2-geojson',PARK_POINTS='parking-v2-points',PARK_LABELS='parking-v2-labels';
-function parkingGeoJSON(parks){return{type:'FeatureCollection',features:parks.map(x=>({type:'Feature',geometry:{type:'Point',coordinates:[+x.lon,+x.lat]},properties:{id:x.id,kind:x.kind||'parking',selected:selected===x.id?1:0}}))}}
+function parkingGeoJSON(parks){return{type:'FeatureCollection',features:parks.filter(x=>Number.isFinite(+x.lon)&&Number.isFinite(+x.lat)).map(x=>({type:'Feature',geometry:{type:'Point',coordinates:[+x.lon,+x.lat]},properties:{id:x.id,kind:x.kind||'parking',selected:selected===x.id?1:0}}))}}
 function ensureParkingMapLayers(){
   if(!map.isStyleLoaded())return false;
   try{
@@ -38,8 +38,9 @@ function ensureParkingMapLayers(){
       'circle-color':['case',['==',['get','selected'],1],'#273244','#ffffff'],
       'circle-stroke-color':'#273244','circle-stroke-width':3,'circle-opacity':0.98}});
     if(!map.getLayer(PARK_LABELS))map.addLayer({id:PARK_LABELS,type:'symbol',source:PARK_SOURCE,layout:{
-      'text-field':['case',['==',['get','kind'],'garage'],'P⌂',['==',['get','kind'],'underground'],'P↓','P'],
-      'text-size':['case',['==',['get','selected'],1],15,13],'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':['case',['==',['get','selected'],1],'#ffffff','#273244']}});
+      'text-field':['match',['get','kind'],'garage','P⌂','underground','P↓','P'],
+      'text-size':['case',['==',['get','selected'],1],15,13],
+      'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':['case',['==',['get','selected'],1],'#ffffff','#273244']}});
     if(!map.__parkingV2Handlers){
       map.__parkingV2Handlers=true;
       const choose=e=>{const f=e.features&&e.features[0];if(f?.properties?.id)selectParking(f.properties.id)};
@@ -47,9 +48,14 @@ function ensureParkingMapLayers(){
       for(const id of [PARK_POINTS,PARK_LABELS]){map.on('mouseenter',id,()=>map.getCanvas().style.cursor='pointer');map.on('mouseleave',id,()=>map.getCanvas().style.cursor='')}
     }
     return true;
-  }catch(err){console.error('Parkmodul 2.0 Layerfehler',err);return false}
+  }catch(err){console.error('Parkmodul 2.0 Layerfehler',err);return !!map.getSource(PARK_SOURCE)}
 }
-function updateParkingMapLayer(parks){if(!map.isStyleLoaded()||!ensureParkingMapLayers())return;const src=map.getSource(PARK_SOURCE);if(src)src.setData(parkingGeoJSON(parks))}
+function updateParkingMapLayer(parks){
+  if(!map.isStyleLoaded())return;
+  ensureParkingMapLayers();
+  const src=map.getSource(PARK_SOURCE);
+  if(src)src.setData(parkingGeoJSON(parks));
+}
 async function loadParking(force=false){
   if(mode==='fuel')return;
   if(!target){const c=map.getCenter();target={lat:c.lat,lon:c.lng,label:'Kartenmitte'}}
