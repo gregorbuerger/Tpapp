@@ -28,17 +28,24 @@ function osmParkingObject(e){
 function mergeParking(){return parkingItems}
 function parkingPriority(x){if(x.kind==='garage'||x.kind==='underground')return 0;return 1}
 function parkingData(){let a=mergeParking();if(target)a=a.map(x=>({...x,dist:km(target.lat,target.lon,x.lat,x.lon)})).filter(x=>x.dist<=PARK_RADIUS_KM);return a.sort((a,b)=>parkingPriority(a)-parkingPriority(b)||(a.dist??999)-(b.dist??999))}
-const PARK_SOURCE='parking-v2-geojson',PARK_POINTS='parking-v2-debug-points';
+const PARK_SOURCE='parking-v2-geojson',PARK_POINTS='parking-v2-symbol-bg',PARK_LABELS='parking-v2-symbol-labels';
 function parkingGeoJSON(parks){return{type:'FeatureCollection',features:parks.filter(x=>Number.isFinite(+x.lon)&&Number.isFinite(+x.lat)).map(x=>({type:'Feature',geometry:{type:'Point',coordinates:[+x.lon,+x.lat]},properties:{id:x.id,kind:x.kind||'parking',selected:selected===x.id?1:0}}))}}
 function ensureParkingMapLayers(){
   if(!map.isStyleLoaded())return false;
   try{
     if(!map.getSource(PARK_SOURCE))map.addSource(PARK_SOURCE,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
     if(!map.getLayer(PARK_POINTS))map.addLayer({id:PARK_POINTS,type:'circle',source:PARK_SOURCE,paint:{
-      'circle-radius':['case',['==',['get','selected'],1],10,7],
+      'circle-radius':['case',['==',['get','selected'],1],14,11],
       'circle-color':['case',['==',['get','selected'],1],'#111827','#2563eb'],
-      'circle-stroke-color':'#ffffff','circle-stroke-width':3,'circle-opacity':1
+      'circle-stroke-color':'#ffffff','circle-stroke-width':2,'circle-opacity':1
     }});
+    if(!map.getLayer(PARK_LABELS))map.addLayer({id:PARK_LABELS,type:'symbol',source:PARK_SOURCE,layout:{
+      'text-field':['case',['==',['get','kind'],'garage'],'P⌂',['==',['get','kind'],'underground'],'P↓','P'],
+      'text-size':12,
+      'text-font':['Noto Sans Regular'],
+      'text-allow-overlap':true,
+      'text-ignore-placement':true
+    },paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0)','text-halo-width':0}});
     if(!map.__parkingV2Handlers){
       map.__parkingV2Handlers=true;
       map.on('click',PARK_POINTS,e=>{const f=e.features&&e.features[0];if(f?.properties?.id)selectParking(f.properties.id)});
