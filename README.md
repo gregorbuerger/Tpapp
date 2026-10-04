@@ -1,14 +1,13 @@
-# Tanken & Parken v4.1
+# Tanken & Parken v4.2
 
 Mobile-first PWA für GitHub Pages.
 
-## Neu in v4.1
-- Der zu strenge Adressfilter aus v4.0 wurde zurückgenommen.
-- Eine fehlende vollständige OSM-Adresse ist kein Ausschlussgrund mehr.
-- Verifizierte kommunale Parkplätze werden immer berücksichtigt und nicht durch den allgemeinen OSM-Filter entfernt.
-- OSM bleibt relevanzgefiltert: Parkhäuser, Tiefgaragen, P+R und größere öffentliche Parkplätze haben Vorrang.
-- Bei normalen Parkplätzen dienen Name und Kapazität als Qualitätsmerkmale; kleine Straßenparkreihen bleiben ausgeschlossen.
-- Private, Kunden-, Mitarbeiter- und Bewohnerparkplätze bleiben ausgeschlossen.
-- Fehlt eine Adresse, wird keine erfundene Adresse angezeigt; Navigation erfolgt weiterhin über die vorhandenen Koordinaten.
-- Parkplatz Ulrichstraße in Ottobeuren bleibt als verifizierter kommunaler Parkplatz sichtbar.
-- Cache und Updateanzeige auf v4.1 aktualisiert.
+## Neu in v4.2
+- Alle alten, manuell im App-Code hinterlegten Pilot-Parkplätze aus Ottobeuren und Memmingen wurden vollständig entfernt.
+- Es gibt keine interne `PLACES`-Liste und keine alten manuellen Parkplatz-Koordinaten mehr.
+- Parkplatzsuche basiert jetzt ausschließlich auf den dynamisch geladenen OSM/Overpass-Daten.
+- Der Relevanzfilter bleibt bestehen: Parkhäuser, Tiefgaragen, P+R und größere öffentliche Parkplätze haben Vorrang; sinnvolle benannte/ausreichend große öffentliche Parkplätze dienen als Fallback.
+- Straßenparkreihen sowie private, Kunden-, Mitarbeiter- und Bewohnerparkplätze bleiben ausgeschlossen.
+- Fehlende Adressen werden nicht erfunden. Navigation nutzt die Koordinaten der jeweiligen Datenquelle.
+- Tankerkönig-Livepreise bleiben unverändert erhalten.
+- Cache und Updateanzeige auf v4.2 aktualisiert.
