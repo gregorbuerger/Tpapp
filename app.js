@@ -26,28 +26,25 @@ function osmParkingObject(e){
 function mergeParking(){return parkingItems}
 function parkingPriority(x){if(x.kind==='garage'||x.kind==='underground')return 0;return 1}
 function parkingData(){let a=mergeParking();if(target)a=a.map(x=>({...x,dist:km(target.lat,target.lon,x.lat,x.lon)})).filter(x=>x.dist<=PARK_RADIUS_KM);return a.sort((a,b)=>parkingPriority(a)-parkingPriority(b)||(a.dist??999)-(b.dist??999))}
-const PARK_SOURCE='parking-v2-geojson',PARK_POINTS='parking-v2-points',PARK_LABELS='parking-v2-labels';
+const PARK_SOURCE='parking-v2-geojson',PARK_POINTS='parking-v2-debug-points';
 function parkingGeoJSON(parks){return{type:'FeatureCollection',features:parks.filter(x=>Number.isFinite(+x.lon)&&Number.isFinite(+x.lat)).map(x=>({type:'Feature',geometry:{type:'Point',coordinates:[+x.lon,+x.lat]},properties:{id:x.id,kind:x.kind||'parking',selected:selected===x.id?1:0}}))}}
 function ensureParkingMapLayers(){
   if(!map.isStyleLoaded())return false;
   try{
     if(!map.getSource(PARK_SOURCE))map.addSource(PARK_SOURCE,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
     if(!map.getLayer(PARK_POINTS))map.addLayer({id:PARK_POINTS,type:'circle',source:PARK_SOURCE,paint:{
-      'circle-radius':['case',['==',['get','selected'],1],17,14],
-      'circle-color':['case',['==',['get','selected'],1],'#273244','#ffffff'],
-      'circle-stroke-color':'#273244','circle-stroke-width':3,'circle-opacity':0.98}});
-    if(!map.getLayer(PARK_LABELS))map.addLayer({id:PARK_LABELS,type:'symbol',source:PARK_SOURCE,layout:{
-      'text-field':['match',['get','kind'],'garage','P⌂','underground','P↓','P'],
-      'text-size':['case',['==',['get','selected'],1],15,13],
-      'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':['case',['==',['get','selected'],1],'#ffffff','#273244']}});
+      'circle-radius':['case',['==',['get','selected'],1],10,7],
+      'circle-color':['case',['==',['get','selected'],1],'#111827','#2563eb'],
+      'circle-stroke-color':'#ffffff','circle-stroke-width':3,'circle-opacity':1
+    }});
     if(!map.__parkingV2Handlers){
       map.__parkingV2Handlers=true;
-      const choose=e=>{const f=e.features&&e.features[0];if(f?.properties?.id)selectParking(f.properties.id)};
-      map.on('click',PARK_POINTS,choose);map.on('click',PARK_LABELS,choose);
-      for(const id of [PARK_POINTS,PARK_LABELS]){map.on('mouseenter',id,()=>map.getCanvas().style.cursor='pointer');map.on('mouseleave',id,()=>map.getCanvas().style.cursor='')}
+      map.on('click',PARK_POINTS,e=>{const f=e.features&&e.features[0];if(f?.properties?.id)selectParking(f.properties.id)});
+      map.on('mouseenter',PARK_POINTS,()=>map.getCanvas().style.cursor='pointer');
+      map.on('mouseleave',PARK_POINTS,()=>map.getCanvas().style.cursor='');
     }
     return true;
-  }catch(err){console.error('Parkmodul 2.0 Layerfehler',err);return !!map.getSource(PARK_SOURCE)}
+  }catch(err){console.error('Parkmodul 2.0 Punkt-Layerfehler',err);return false}
 }
 function updateParkingMapLayer(parks){
   if(!map.isStyleLoaded())return;
@@ -68,7 +65,7 @@ async function loadParking(force=false){
     if(!r.ok)throw new Error('OSM-Parkdaten nicht erreichbar');
     const j=await r.json();if(seq!==parkingSeq)return;
     const els=j.elements||[],mapped=els.map(osmParkingObject),items=mapped.filter(Boolean);
-    parkingItems=items;parkingDiag={loaded:els.length,excluded:els.length-items.length,shown:items.length};parkingLoading=false;parkingError='';render();
+    parkingItems=items;parkingDiag={loaded:els.length,excluded:els.length-items.length,shown:items.length};parkingLoading=false;parkingError='';render();requestAnimationFrame(()=>updateParkingMapLayer(parkingData()));
   }catch(e){if(e?.name==='AbortError'||seq!==parkingSeq)return;parkingLoading=false;parkingError=e.message||'Parkdaten konnten nicht geladen werden.';render()}
 }
 function centerPoint(){if(target)return{lat:target.lat,lon:target.lon};const c=map.getCenter();return{lat:c.lat,lon:c.lng}}
@@ -138,7 +135,7 @@ document.querySelectorAll('.filter').forEach(b=>b.onclick=()=>{document.querySel
 function restorePrefs(){document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));document.getElementById('fuelFilter').style.display=mode==='fuel'?'flex':'none';document.querySelectorAll('.fuel-chip').forEach(b=>b.classList.toggle('active',b.dataset.fuel===fuel))}restorePrefs();
 const sheetContent=document.getElementById('sheetContent'),sheetMini=document.getElementById('sheetMini'),sheetToggle=document.getElementById('sheetToggle');function setSheet(minimized){sheetContent.classList.toggle('hidden',minimized);sheetMini.classList.toggle('hidden',!minimized);if(!minimized){document.getElementById('placeDetail').classList.add('hidden');selected=null;render()}}sheetToggle.onclick=()=>setSheet(true);sheetMini.onclick=()=>setSheet(false);
 const sh=document.getElementById('searchHere');map.on('dragend',()=>sh.classList.add('visible'));sh.onclick=()=>{sh.classList.remove('visible');const c=map.getCenter();target={lat:c.lat,lon:c.lng,label:'Kartenmitte'};if(targetMarker)targetMarker.remove();targetMarker=null;document.getElementById('targetInfo').classList.remove('hidden');document.getElementById('targetInfo').innerHTML=`<strong>Kartenbereich</strong><span>Parken ${PARK_RADIUS_KM} km · Tanken ${FUEL_RADIUS_KM} km</span>`;parkingRequestKey='';fuelRequestKey='';render();loadParking(true);loadFuel(true)};document.getElementById('locateBtn').onclick=()=>navigator.geolocation?.getCurrentPosition(p=>{selected=null;target={lat:p.coords.latitude,lon:p.coords.longitude,label:'Mein Standort'};document.getElementById('placeDetail').classList.add('hidden');setSheet(true);if(targetMarker)targetMarker.remove();targetMarker=null;showUserLocation(p.coords.latitude,p.coords.longitude,p.coords.accuracy);document.getElementById('targetInfo').classList.remove('hidden');document.getElementById('targetInfo').innerHTML=`<strong>Mein Standort</strong><span>Parken ${PARK_RADIUS_KM} km · Tanken ${FUEL_RADIUS_KM} km · Genauigkeit ca. ${Math.round(p.coords.accuracy||0)} m</span>`;map.flyTo({center:[target.lon,target.lat],zoom:14});render();loadParking(true);loadFuel(true)},()=>alert('Standort konnte nicht ermittelt werden.'),{enableHighAccuracy:true,timeout:10000,maximumAge:30000});
-map.on('load',()=>{const c=map.getCenter();if(!target)target={lat:c.lat,lon:c.lng,label:'Kartenmitte'};render();requestAnimationFrame(()=>ensureParkingMapLayers());if(mode!=='fuel')loadParking(true);if(mode!=='parking')loadFuel()});
+map.on('load',()=>{const c=map.getCenter();if(!target)target={lat:c.lat,lon:c.lng,label:'Kartenmitte'};render();requestAnimationFrame(()=>{ensureParkingMapLayers();updateParkingMapLayer(parkingData())});if(mode!=='fuel')loadParking(true);if(mode!=='parking')loadFuel()});
 function showInfo(){const box=document.getElementById('placeDetail');box.className='place-detail expanded';box.innerHTML=`<div class="detail-top"><div><div class="type">INFO</div><div class="detail-title">Datenquellen</div></div><button class="detail-close">×</button></div><div class="info-copy"><strong>Kraftstoffpreise & Tankstellen</strong><br>MTS-K, bereitgestellt über Tankerkönig · CC BY 4.0. Verwendung ausschließlich zur Verbraucherinformation.<br><a href="https://creativecommons.tankerkoenig.de/" target="_blank" rel="noopener noreferrer">Tankerkönig ↗</a><br><br><strong>Parkplätze</strong><br>Deutschlandweite Basis: OpenStreetMap. Vorhandene Angaben zu Typ, Kapazität, Gebühren und Öffnungszeiten werden übernommen. Parkmodul 2.0 zeigt die geladenen OSM-Parkanlagen weitgehend unverfälscht. In dieser Basisversion wird nur explizites Straßenparken ausgeblendet. Parkbedingungen und Beschilderung bitte vor Ort prüfen.<br><br><strong>Karte</strong><br>OpenFreeMap / OpenStreetMap.</div>`;box.querySelector('.detail-close').onclick=()=>box.classList.add('hidden')}
 document.getElementById('infoBtn').onclick=showInfo;
 async function checkForUpdate(manual=false){const status=document.getElementById('updateStatus');if(manual){status.textContent='Suche nach Update …';status.classList.remove('hidden')}try{if(!('serviceWorker'in navigator))return;const reg=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('./sw.js?v=5.2',{updateViaCache:'none'});await reg.update();if(manual){status.textContent='v5.2 ist aktuell.';setTimeout(()=>status.classList.add('hidden'),2200)}}catch{if(manual)status.textContent='Updateprüfung fehlgeschlagen.'}}document.getElementById('updateBtn').onclick=()=>checkForUpdate(true);if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js?v=5.2',{updateViaCache:'none'}).then(reg=>{reg.update();setInterval(()=>reg.update(),30*60*1000)});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!window.__reloading){window.__reloading=true;location.reload()}})}
