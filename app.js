@@ -14,8 +14,10 @@ function osmParkingObject(e){
   const t=e.tags||{},lat=e.lat??e.center?.lat,lon=e.lon??e.center?.lon;
   if(!Number.isFinite(+lat)||!Number.isFinite(+lon))return null;
   const parkingTag=String(t.parking||'').toLowerCase();
-  // Parkmodul 2.0 filtert in der Basisversion nur echtes Strassenparken aus.
+  // Parkmodul 2.0: nur eindeutige Ausschlussgruende.
   if(['street_side','lane','on_street','on_kerb','half_on_kerb','shoulder','layby'].includes(parkingTag))return null;
+  const accessTag=String(t.access||t.motor_vehicle||t.motorcar||'').toLowerCase();
+  if(['private','no'].includes(accessTag))return null;
   const kind=parkingKind(t),name=t.name||t.operator||parkingKindLabel({kind}),total=t.capacity?parseInt(t.capacity,10)||null:null;
   return{id:`osm-${e.type}-${e.id}`,osmType:e.type,osmId:e.id,type:'parking',kind,name,lat:+lat,lon:+lon,total,
     address:[t['addr:street'],t['addr:housenumber']].filter(Boolean).join(' ')||null,postCode:t['addr:postcode']||'',city:t['addr:city']||t['addr:place']||'',
