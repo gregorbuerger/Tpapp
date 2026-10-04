@@ -1,6 +1,9 @@
-# Tanken & Parken v4.5
+# Tanken & Parken v4.7
 
-## Neu in v4.5
+## Neu in v4.7
+- Updatepfad repariert: UI, Updateanzeige und Service-Worker-Cache verwenden jetzt konsistent v4.7.
+- Eigene CSS/JS/Manifest-Dateien werden versionsgebunden geladen, damit iOS/GitHub Pages keine alte App-Datei festhalten.
+- Service Worker wird mit `updateViaCache: none` und versionsgebundener URL registriert; alte App-Caches werden beim Aktivieren gelöscht.
 - Blaue, verkehrsnahe Parkplatzmarker für Parkplatz, Parkhaus und Tiefgarage.
 - Parkplatzadressen wieder prominent in der Detailansicht, sofern OSM sie liefert.
 - „In Karten ansehen“ ersetzt die direkte Navigation; Apple Karten und Google Maps öffnen den Ort zur Prüfung.
@@ -8,4 +11,4 @@
 - Verbesserter Kunden-/Supermarktfilter: explizit eingeschränkte Parkplätze sowie eindeutig supermarktnahe Parkflächen werden nicht empfohlen.
 - Neue Funktion „Problem melden“ für Parkplätze. Meldungen werden in dieser Hobbyversion lokal auf dem Gerät gespeichert und als Warnung am Marker/Detail angezeigt.
 - Keine alten manuellen Pilot-Parkplatzdaten.
-- Cache und Updateanzeige auf v4.5.
+- Cache und Updateanzeige auf v4.7.
