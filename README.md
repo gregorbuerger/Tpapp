@@ -1,17 +1,11 @@
-# Tanken & Parken v4.13
+# Tanken & Parken v4.14
 
-## Neu in v4.13
-- Updatepfad repariert: UI, Updateanzeige und Service-Worker-Cache verwenden jetzt konsistent v4.13.
-- Eigene CSS/JS/Manifest-Dateien werden versionsgebunden geladen, damit iOS/GitHub Pages keine alte App-Datei festhalten.
-- Service Worker wird mit `updateViaCache: none` und versionsgebundener URL registriert; alte App-Caches werden beim Aktivieren gelöscht.
-- Blaue, verkehrsnahe Parkplatzmarker für Parkplatz, Parkhaus und Tiefgarage.
-- Parkplatzadressen wieder prominent in der Detailansicht, sofern OSM sie liefert.
-- „In Karten ansehen“ ersetzt die direkte Navigation; Apple Karten und Google Maps öffnen den Ort zur Prüfung.
-- Ergebnisliste und Detailkarte schließen sich gegenseitig aus.
-- Verbesserter Kunden-/Supermarktfilter: explizit eingeschränkte Parkplätze sowie eindeutig supermarktnahe Parkflächen werden nicht empfohlen.
-- Neue Funktion „Problem melden“ für Parkplätze. Meldungen werden in dieser Hobbyversion lokal auf dem Gerät gespeichert und als Warnung am Marker/Detail angezeigt.
-- Keine alten manuellen Pilot-Parkplatzdaten.
-- Cache und Updateanzeige auf v4.13.
+## Neu in v4.14
+- Parkplatz-Auswahlpfad neu geordnet: Reverse-Geocoding/Adressauflösung wird abgeschlossen, bevor die Detailkarte geöffnet wird.
+- Parkplatz-Zentrierung läuft danach genau einmal über denselben Auswahl-/Zentrierungspfad, der bei Tankstellen bereits korrekt funktioniert.
+- Der funktionierende Tankstellenpfad wurde nicht verändert.
+- Parkplatz-Performance und lokaler OSM-Cache aus v4.11 bleiben erhalten.
+- Service-Worker-URL, Updateanzeige, UI-Version und Cache konsistent auf v4.14.
 
-
-v4.13: Parkplatzfilter auf eindeutige Ausschlusskriterien reduziert; Kartenmitte ist wieder ein echter Suchbezug; Diagnose geladen/ausgeschlossen/angezeigt.
+## Verhalten
+Parkplatz auswählen -> Adresse vervollständigen -> Detailkarte rendern -> freien Kartenbereich messen -> Marker zentrieren.
