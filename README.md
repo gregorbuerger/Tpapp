@@ -1,11 +1,11 @@
-# Tanken & Parken v4.17
+# Tanken & Parken v4.18
 
-## Neu in v4.17
+## Neu in v4.18
 - Parkplatz-Auswahlpfad neu geordnet: Reverse-Geocoding/Adressauflösung wird abgeschlossen, bevor die Detailkarte geöffnet wird.
 - Parkplatz-Zentrierung läuft danach genau einmal über denselben Auswahl-/Zentrierungspfad, der bei Tankstellen bereits korrekt funktioniert.
 - Der funktionierende Tankstellenpfad wurde nicht verändert.
 - Parkplatz-Performance und lokaler OSM-Cache aus v4.11 bleiben erhalten.
-- Service-Worker-URL, Updateanzeige, UI-Version und Cache konsistent auf v4.17.
+- Service-Worker-URL, Updateanzeige, UI-Version und Cache konsistent auf v4.18.
 
 ## Verhalten
 Parkplatz auswählen -> Adresse vervollständigen -> Detailkarte rendern -> freien Kartenbereich messen -> Marker zentrieren.
