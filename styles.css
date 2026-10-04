@@ -127,3 +127,11 @@ body.search-active .searchbox .suggestions:empty{display:none}
 .parking-marker-visual.is-selected .parking-underground-sign{background:#fff;color:#273244;}
 /* v5.0 Parkmodul 2.0 */
 .parking-check-note{margin-top:10px;padding:9px 10px;border-radius:11px;background:#f6f7f9;color:#5f6978;font-size:11px;font-weight:650;line-height:1.35}
+
+/* Parkmodul 2.0 – lokale Meldungen */
+.pm2-report-btn{border:0;background:transparent;color:#a15c14;font-weight:750;font-size:12px;padding:0}
+.pm2-report-panel{margin-top:10px;padding:10px;border-radius:13px;background:#fff8eb;border:1px solid #f4dfb7;font-size:11px;color:#6d5a3c}
+.pm2-report-panel>strong,.pm2-report-panel>span{display:block}.pm2-report-panel>span{margin-top:3px;color:#8a7658}
+.pm2-report-options{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.pm2-report-options button{border:0;border-radius:9px;background:#fff;color:#6d5a3c;padding:7px 8px;font-size:10px;font-weight:750}.pm2-report-options button.active{background:#f5d89e;color:#6d4508}
+.pm2-report-delete{margin-top:8px;border:0;background:transparent;color:#a94442;font-size:10px;font-weight:750;padding:0}
+.pm2-report-warning{margin-top:9px;padding:8px 9px;border-radius:10px;background:#fff3dc;color:#8a5a12;font-size:11px;font-weight:750}
