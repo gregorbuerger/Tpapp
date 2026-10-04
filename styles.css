@@ -94,3 +94,20 @@ body.search-active .searchbox .suggestions:empty{display:none}
     max-height:min(62vh,620px);
   }
 }
+
+/* v4.4 official-style parking markers, map review and reports */
+.marker.parking{position:relative;width:36px;height:36px;border-radius:7px;background:#1769d2;border:2px solid #fff;color:#fff;box-shadow:0 4px 14px rgba(30,41,59,.25);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif}
+.marker.parking .parking-p{font-size:24px;font-weight:850;line-height:1}
+.marker.parking-garage,.marker.parking-underground{border-top:2px solid #fff;font-size:inherit}
+.marker.parking-garage .parking-roof{position:absolute;left:5px;right:5px;top:4px;height:5px;border-left:2px solid #fff;border-right:2px solid #fff;border-top:2px solid #fff;border-radius:3px 3px 0 0}
+.marker.parking-garage .parking-p{transform:translateY(3px)}
+.marker.parking-underground .parking-underground-sign{position:absolute;right:3px;bottom:1px;width:13px;height:13px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#1769d2;font-size:11px;font-weight:900}
+.marker.parking.selected-marker{background:#0f4fa8;color:#fff;border-color:#fff;box-shadow:0 0 0 4px rgba(23,105,210,.22),0 8px 22px rgba(30,41,59,.3)}
+.report-badge{position:absolute;right:-6px;top:-7px;width:17px;height:17px;border-radius:50%;display:grid;place-items:center;background:#f59e0b;color:#fff;border:2px solid #fff;font-size:10px;font-weight:900}
+.detail-address{font-size:13px;color:#536074;margin-top:5px;line-height:1.3;font-weight:650}
+.map-actions-title{margin-top:10px;font-size:10px;font-weight:800;color:#8993a2;text-transform:uppercase;letter-spacing:.04em}
+.report-toggle{border:0;background:transparent;color:#a15c14;font-weight:750;font-size:12px;padding:0}
+.report-panel{margin-top:10px;padding:10px;border-radius:13px;background:#fff8eb;border:1px solid #f4dfb7;font-size:11px;color:#6d5a3c}
+.report-panel strong,.report-panel span{display:block}.report-panel span{margin-top:3px;color:#8a7658}
+.report-options{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.report-options button{border:0;border-radius:9px;background:#fff;color:#6d5a3c;padding:7px 8px;font-size:10px;font-weight:750}
+.report-warning{margin-top:9px;padding:8px 9px;border-radius:10px;background:#fff3dc;color:#8a5a12;font-size:11px;font-weight:750}
