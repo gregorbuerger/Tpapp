@@ -1,4 +1,4 @@
-const PARK_RADIUS_KM=1,FUEL_RADIUS_KM=10,API='https://gregorbuerger--6c96ef50bea611f1b1051607ee4eb77e.web.val.run/';
+const PARK_RADIUS_KM=1,FUEL_RADIUS_KM=10,OVERPASS='https://overpass-api.de/api/interpreter',API='https://gregorbuerger--6c96ef50bea611f1b1051607ee4eb77e.web.val.run/';
 // Parkmodul 2.0 startet bewusst ohne Altzustand. Alte Parkplatz-Schluessel werden einmalig entfernt.
 for(const k of Object.keys(localStorage)){if(k.startsWith('tp-parking-'))localStorage.removeItem(k)}
 const PARK_REPORTS_KEY='tp-park-reports-v2';
@@ -8,6 +8,16 @@ function saveParkingReport(x,reason){const all=parkingReports();all[x.id]={reaso
 function deleteParkingReport(id){const all=parkingReports();delete all[id];localStorage.setItem(PARK_REPORTS_KEY,JSON.stringify(all))}
 let mode=localStorage.getItem('tp-mode')||'all',fuel=localStorage.getItem('tp-fuel')||'e10',fuelDetails=new Map(),markers=[],selected=null,target=null,targetMarker=null,userMarker=null,searchTimer,fuelStations=[],fuelLoading=false,fuelError='',fuelRequestKey='',fuelFetchedAt=0,parkingItems=[],parkingLoading=false,parkingError='',parkingRequestKey='',parkingDiag={loaded:0,excluded:0,shown:0},parkingAbort=null,parkingSeq=0;
 const map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/liberty',center:[10.235,47.965],zoom:11.1,attributionControl:true});
+const parkingLoadPill=document.createElement('div');
+parkingLoadPill.id='parking-load-pill';
+parkingLoadPill.setAttribute('aria-live','polite');
+parkingLoadPill.innerHTML='<span class="parking-load-spinner"></span><span class="parking-load-text">Parkplätze werden geladen …</span>';
+document.body.appendChild(parkingLoadPill);
+function setParkingLoadPill(show,text='Parkplätze werden geladen …'){
+  const t=parkingLoadPill.querySelector('.parking-load-text');if(t)t.textContent=text;
+  parkingLoadPill.classList.toggle('show',!!show);
+}
+
 function km(a,b,c,d){const R=6371,p=Math.PI/180,x=(c-a)*p,y=(d-b)*p,q=Math.sin(x/2)**2+Math.cos(a*p)*Math.cos(c*p)*Math.sin(y/2)**2;return 2*R*Math.asin(Math.sqrt(q))}
 function parkingKind(tags={}){const p=(tags.parking||'').toLowerCase();if(p==='multi-storey')return 'garage';if(p==='underground')return 'underground';if(tags.amenity==='parking_entrance'&&p==='multi-storey')return 'garage';if(tags.amenity==='parking_entrance'&&p==='underground')return 'underground';return 'parking'}
 function parkingKindLabel(x){return x.kind==='garage'?'Parkhaus':x.kind==='underground'?'Tiefgarage':'Parkplatz'}
@@ -89,16 +99,15 @@ async function loadParking(force=false){
   const lat=+target.lat,lon=+target.lon,key=`${lat.toFixed(4)}:${lon.toFixed(4)}`;
   if(!force&&key===parkingRequestKey&&parkingItems.length)return;
   parkingRequestKey=key;if(parkingAbort)parkingAbort.abort();parkingAbort=new AbortController();const seq=++parkingSeq;
-  parkingLoading=true;parkingError='';parkingDiag={loaded:0,excluded:0,shown:0};render();
+  parkingLoading=true;parkingError='';parkingDiag={loaded:0,excluded:0,shown:0};setParkingLoadPill(true,parkingItems.length?'Parkplätze werden aktualisiert …':'Parkplätze werden geladen …');render();
+  const q=`[out:json][timeout:20];(nwr["amenity"="parking"](around:${PARK_RADIUS_KM*1000},${lat},${lon});nwr["amenity"="parking_entrance"](around:${PARK_RADIUS_KM*1000},${lat},${lon}););out center tags;`;
   try{
-    const u=new URL(API);u.searchParams.set('parking','1');u.searchParams.set('lat',lat);u.searchParams.set('lng',lon);u.searchParams.set('radius',PARK_RADIUS_KM);
-    const r=await fetch(u,{cache:'no-store',signal:parkingAbort.signal});
-    const j=await r.json();
-    if(!r.ok||!j.ok)throw new Error(j.error||'OSM-Parkdaten nicht erreichbar');
-    if(seq!==parkingSeq)return;
+    const r=await fetch(OVERPASS,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(q),signal:parkingAbort.signal});
+    if(!r.ok)throw new Error('OSM-Parkdaten nicht erreichbar');
+    const j=await r.json();if(seq!==parkingSeq)return;
     const els=j.elements||[],mapped=els.map(osmParkingObject),items=mapped.filter(Boolean);
-    parkingItems=items;parkingDiag={loaded:els.length,excluded:els.length-items.length,shown:items.length};parkingLoading=false;parkingError='';render();requestAnimationFrame(()=>updateParkingMapLayer(parkingData()));
-  }catch(e){if(e?.name==='AbortError'||seq!==parkingSeq)return;parkingLoading=false;parkingError=e.message||'Parkdaten konnten nicht geladen werden.';render()}
+    parkingItems=items;parkingDiag={loaded:els.length,excluded:els.length-items.length,shown:items.length};parkingLoading=false;parkingError='';setParkingLoadPill(false);render();requestAnimationFrame(()=>updateParkingMapLayer(parkingData()));
+  }catch(e){if(e?.name==='AbortError'||seq!==parkingSeq)return;parkingLoading=false;parkingError=e.message||'Parkdaten konnten nicht geladen werden.';setParkingLoadPill(true,'Parkplätze konnten nicht geladen werden');setTimeout(()=>setParkingLoadPill(false),2200);render()}
 }
 function centerPoint(){if(target)return{lat:target.lat,lon:target.lon};const c=map.getCenter();return{lat:c.lat,lon:c.lng}}
 function isOpen(x){if(!x.hours)return null;if(x.hours==='24/7')return true;const now=new Date(),mins=now.getHours()*60+now.getMinutes(),[a,b]=x.hours.split('–'),toM=s=>{const[h,m]=s.split(':').map(Number);return h*60+m},start=toM(a),end=toM(b);return end<start?(mins>=start||mins<end):(mins>=start&&mins<end)}
@@ -225,4 +234,4 @@ map.on('load',()=>{const c=map.getCenter();if(!target)target={lat:c.lat,lon:c.ln
 function showInfo(){const box=document.getElementById('placeDetail'),reports=parkingReports(),entries=Object.entries(reports);box.className='place-detail expanded';box.innerHTML=`<div class="detail-top"><div><div class="type">INFO</div><div class="detail-title">Datenquellen</div></div><button class="detail-close">×</button></div><div class="info-copy"><strong>Kraftstoffpreise & Tankstellen</strong><br>MTS-K, bereitgestellt über Tankerkönig · CC BY 4.0. Verwendung ausschließlich zur Verbraucherinformation.<br><a href="https://creativecommons.tankerkoenig.de/" target="_blank" rel="noopener noreferrer">Tankerkönig ↗</a><br><br><strong>Parkplätze</strong><br>Deutschlandweite Basis: OpenStreetMap. Parkbedingungen und Beschilderung bitte vor Ort prüfen.<br><br><button type="button" class="pm2-reports-overview-btn">Gemeldete Parkplätze (${entries.length})</button><div id="pm2ReportsOverview"></div><br><strong>Karte</strong><br>OpenFreeMap / OpenStreetMap.</div>`;box.querySelector('.detail-close').onclick=()=>box.classList.add('hidden');box.querySelector('.pm2-reports-overview-btn').onclick=()=>showReportsOverview()}
 function showReportsOverview(){const host=document.getElementById('pm2ReportsOverview');if(!host)return;const reports=parkingReports(),entries=Object.entries(reports);if(!entries.length){host.innerHTML='<div class="pm2-reports-empty">Noch keine Parkplätze gemeldet.</div>';return}host.innerHTML=`<div class="pm2-reports-list">${entries.map(([id,r])=>{const x=parkingItems.find(p=>p.id===id),name=x?.name||parkingKindLabel({kind:x?.kind||'parking'}),osm=r.osmType&&r.osmId?`https://www.openstreetmap.org/${r.osmType}/${r.osmId}`:'';return `<div class="pm2-report-item"><strong>${name}</strong><span>${r.reason}</span><div>${x?`<button type="button" data-show-report="${id}">Auf Karte zeigen</button>`:''}${osm?`<a href="${osm}" target="_blank" rel="noopener noreferrer">OSM ↗</a>`:''}<button type="button" data-delete-report="${id}">Löschen</button></div></div>`}).join('')}</div>`;host.querySelectorAll('[data-show-report]').forEach(b=>b.onclick=()=>{const x=parkingItems.find(p=>p.id===b.dataset.showReport);if(!x)return;document.getElementById('placeDetail').classList.add('hidden');map.easeTo({center:[x.lon,x.lat],zoom:16});setTimeout(()=>selectParking(x.id),350)});host.querySelectorAll('[data-delete-report]').forEach(b=>b.onclick=()=>{deleteParkingReport(b.dataset.deleteReport);updateParkingMapLayer(parkingData());showReportsOverview()})}
 document.getElementById('infoBtn').onclick=showInfo;
-async function checkForUpdate(manual=false){const status=document.getElementById('updateStatus');if(manual){status.textContent='Suche nach Update …';status.classList.remove('hidden')}try{if(!('serviceWorker'in navigator))return;const reg=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('./sw.js?v=5.21',{updateViaCache:'none'});await reg.update();if(manual){status.textContent='v5.21 ist aktuell.';setTimeout(()=>status.classList.add('hidden'),2200)}}catch{if(manual)status.textContent='Updateprüfung fehlgeschlagen.'}}document.getElementById('updateBtn').onclick=()=>checkForUpdate(true);if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js?v=5.21',{updateViaCache:'none'}).then(reg=>{reg.update();setInterval(()=>reg.update(),30*60*1000)});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!window.__reloading){window.__reloading=true;location.reload()}})}
+async function checkForUpdate(manual=false){const status=document.getElementById('updateStatus');if(manual){status.textContent='Suche nach Update …';status.classList.remove('hidden')}try{if(!('serviceWorker'in navigator))return;const reg=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('./sw.js?v=5.22',{updateViaCache:'none'});await reg.update();if(manual){status.textContent='v5.22 ist aktuell.';setTimeout(()=>status.classList.add('hidden'),2200)}}catch{if(manual)status.textContent='Updateprüfung fehlgeschlagen.'}}document.getElementById('updateBtn').onclick=()=>checkForUpdate(true);if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js?v=5.22',{updateViaCache:'none'}).then(reg=>{reg.update();setInterval(()=>reg.update(),30*60*1000)});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!window.__reloading){window.__reloading=true;location.reload()}})}
