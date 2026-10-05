@@ -1,4 +1,4 @@
-# Tanken & Parken v5.12
+# Tanken & Parken v5.13
 
 ## Parkmodul 2.0 – sauberer Schnitt
 
@@ -9,7 +9,7 @@
 - `amenity=parking` und `amenity=parking_entrance` werden geladen.
 - Nur explizites Straßenparken (`street_side`, `lane`, `on_kerb` usw.) wird ausgeschlossen.
 - Tankstellenmodul bleibt getrennt und unverändert.
-- Service Worker und Assets sind konsistent auf v5.12 versioniert.
+- Service Worker und Assets sind konsistent auf v5.13 versioniert.
 
 - Kleine UI-Aenderung: Nach Auswahl eines Adressvorschlags wird die Vorschlagsliste sofort geleert und geschlossen.
 
