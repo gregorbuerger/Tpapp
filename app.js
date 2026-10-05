@@ -124,34 +124,54 @@ function showParkingDetail(x){const d=x.dist!=null?(x.dist<1?Math.round(x.dist*1
 function showParkingReportPanel(x){const host=document.getElementById('pm2ReportPanel');if(!host)return;const current=parkingReport(x.id),reasons=['Nur für Besucher/Kunden','Privat oder gesperrt','Parkplatz existiert nicht','Position ist falsch','Angaben sind falsch'];host.innerHTML=`<div class="pm2-report-panel"><strong>Problem melden</strong><span>Die Meldung wird in dieser Version nur auf diesem Gerät gespeichert.</span><div class="pm2-report-options">${reasons.map(r=>`<button type="button" data-reason="${r}"${current?.reason===r?' class="active"':''}>${r}</button>`).join('')}</div>${current?'<button type="button" class="pm2-report-delete">Lokale Meldung löschen</button>':''}</div>`;host.querySelectorAll('[data-reason]').forEach(b=>b.onclick=()=>{saveParkingReport(x,b.dataset.reason);updateParkingMapLayer(parkingData());showParkingDetail(x)});const del=host.querySelector('.pm2-report-delete');if(del)del.onclick=()=>{deleteParkingReport(x.id);updateParkingMapLayer(parkingData());showParkingDetail(x)}}
 function fuelOpeningHtml(detail){
   if(!detail)return '<div class="fuel-hours-status">Öffnungszeiten werden geladen …</div>';
-  if(detail.error){
-    const dbg=[detail.status?`HTTP ${detail.status}`:'',detail.error,detail.raw?`Antwort: ${detail.raw}`:''].filter(Boolean).join('<br>');
-    return `<div class="fuel-hours-status"><strong>Detail-Debug</strong><br>${dbg}</div>`;
-  }
+  if(detail.error)return '<div class="fuel-hours-status">Öffnungszeiten derzeit nicht verfügbar.</div>';
   const times=Array.isArray(detail.openingTimes)?detail.openingTimes:[];
   if(detail.wholeDay===true)return '<div class="fuel-hours"><strong>Öffnungszeiten</strong><br>24 Stunden geöffnet</div>';
   if(!times.length)return '<div class="fuel-hours-status">Keine Öffnungszeiten hinterlegt.</div>';
   return `<div class="fuel-hours"><strong>Öffnungszeiten</strong><br>${times.map(t=>`${t.text||''}: ${(t.start||'').slice(0,5)}–${(t.end||'').slice(0,5)}`).join('<br>')}</div>`;
 }
+function fuelDayMatches(text,day){
+  const t=(text||'').toLowerCase().replace(/\s/g,'');
+  const names=[['so','sonntag'],['mo','montag'],['di','dienstag'],['mi','mittwoch'],['do','donnerstag'],['fr','freitag'],['sa','samstag']];
+  if(names[day].some(n=>t.includes(n)))return true;
+  const short=['so','mo','di','mi','do','fr','sa'];
+  for(const part of t.split(',')){
+    const m=part.match(/(so|mo|di|mi|do|fr|sa)-(so|mo|di|mi|do|fr|sa)/);
+    if(m){let a=short.indexOf(m[1]),b=short.indexOf(m[2]),d=day;if(a<=b&&d>=a&&d<=b)return true;if(a>b&&(d>=a||d<=b))return true}
+  }
+  return false;
+}
+function fuelMinutes(hm){const m=String(hm||'').match(/^(\d{1,2}):(\d{2})/);return m?(+m[1])*60+(+m[2]):null}
+function fuelSmartStatus(x,detail){
+  if(!detail||detail.error)return x.isOpen?{open:true,text:'Geöffnet'}:{open:false,text:'Geschlossen'};
+  if(detail.wholeDay===true)return {open:true,text:'Durchgehend geöffnet'};
+  const times=Array.isArray(detail.openingTimes)?detail.openingTimes:[];
+  if(!times.length)return x.isOpen?{open:true,text:'Geöffnet'}:{open:false,text:'Geschlossen'};
+  const now=new Date(),day=now.getDay(),mins=now.getHours()*60+now.getMinutes();
+  const today=times.filter(t=>fuelDayMatches(t.text,day)).map(t=>({...t,s:fuelMinutes(t.start),e:fuelMinutes(t.end)})).filter(t=>t.s!=null&&t.e!=null).sort((a,b)=>a.s-b.s);
+  for(const t of today)if(mins>=t.s&&mins<t.e)return {open:true,text:`Geöffnet · bis ${String(t.end).slice(0,5)} Uhr`};
+  for(const t of today)if(mins<t.s)return {open:false,text:`Geschlossen · öffnet um ${String(t.start).slice(0,5)} Uhr`};
+  for(let add=1;add<=7;add++){
+    const d=(day+add)%7, next=times.filter(t=>fuelDayMatches(t.text,d)).map(t=>({...t,s:fuelMinutes(t.start)})).filter(t=>t.s!=null).sort((a,b)=>a.s-b.s)[0];
+    if(next){const when=add===1?'morgen':['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][d];return {open:false,text:`Geschlossen · öffnet ${when} um ${String(next.start).slice(0,5)} Uhr`}}
+  }
+  return x.isOpen?{open:true,text:'Geöffnet'}:{open:false,text:'Geschlossen'};
+}
 async function loadFuelDetail(x){
   if(fuelDetails.has(x.id))return fuelDetails.get(x.id);
   const u=new URL(API);u.searchParams.set('detail',x.id);
   try{
-    const r=await fetch(u,{cache:'no-store'});
-    const raw=await r.text();
-    let j=null;
-    try{j=JSON.parse(raw)}catch{}
-    if(!r.ok||!j?.ok){
-      const d={error:j?.error||`Detailabfrage fehlgeschlagen`,status:r.status,raw:raw.slice(0,500),url:u.toString()};
-      fuelDetails.set(x.id,d);return d;
-    }
+    const r=await fetch(u,{cache:'no-store'}),j=await r.json();
+    if(!r.ok||!j?.ok)throw new Error(j?.error||'Detailabfrage fehlgeschlagen');
     const d=j.station||j.detail||j;fuelDetails.set(x.id,d);return d;
-  }catch(e){
-    const d={error:e.message||'Detailabfrage fehlgeschlagen',status:0,raw:'Fetch fehlgeschlagen',url:u.toString()};
-    fuelDetails.set(x.id,d);return d;
-  }
+  }catch(e){const d={error:e.message||'Detailabfrage fehlgeschlagen'};fuelDetails.set(x.id,d);return d}
 }
-function showFuelDetail(x){const box=document.getElementById('placeDetail'),addr=[x.street,x.houseNumber].filter(Boolean).join(' ')+' · '+[x.postCode,x.place].filter(Boolean).join(' '),detail=fuelDetails.get(x.id);box.className='place-detail';box.innerHTML=`<div class="detail-top"><div><div class="type">⛽ ${fuelName()}</div><div class="detail-title">${x.name}</div><div class="detail-sub">${addr}</div><div class="detail-sub">ID: ${x.id}</div></div><button class="detail-close">×</button></div><div class="detail-row"><span class="pill ${x.isOpen?'open':'closed'}">${x.isOpen?'● Geöffnet':'● Geschlossen'}</span><span class="pill">${x.distance.toFixed(1).replace('.',',')} km</span></div>${x.isOpen?`<div class="detail-fuel-price">${price(x.price)} <small>/ Liter</small></div>`:'<div class="detail-closed">Tankstelle geschlossen</div>'}${navButtons(x)}<div class="detail-extra">${!x.isOpen?`Zuletzt gemeldete Preise:<br>`:''}E5: ${price(x.prices?.e5)}<br>E10: ${price(x.prices?.e10)}<br>Diesel: ${price(x.prices?.diesel)}<br><br>${fuelOpeningHtml(detail)}<br>${fetchedText()}<br>Daten: MTS-K über Tankerkönig · CC BY 4.0 · ausschließlich Verbraucherinformation.</div><div class="detail-actions"><button class="detail-more">Details</button><a class="detail-source" href="https://creativecommons.tankerkoenig.de/" target="_blank" rel="noopener noreferrer">Tankerkönig ↗</a></div>`;bindDetail(box,x)}
+function showFuelDetail(x){
+  const box=document.getElementById('placeDetail'),addr=[x.street,x.houseNumber].filter(Boolean).join(' ')+' · '+[x.postCode,x.place].filter(Boolean).join(' '),detail=fuelDetails.get(x.id),status=fuelSmartStatus(x,detail);
+  box.className='place-detail';
+  box.innerHTML=`<div class="detail-top"><div><div class="type">⛽ ${fuelName()}</div><div class="detail-title">${x.name}</div><div class="detail-sub">${addr}</div></div><button class="detail-close">×</button></div><div class="detail-row"><span class="pill ${status.open?'open':'closed'}">● ${status.text}</span><span class="pill">${x.distance.toFixed(1).replace('.',',')} km</span></div>${x.isOpen?`<div class="detail-fuel-price">${price(x.price)} <small>/ Liter</small></div>`:'<div class="detail-closed">Tankstelle geschlossen</div>'}<div class="detail-extra">${fuelOpeningHtml(detail)}</div>${navButtons(x)}<div class="detail-extra">${!x.isOpen?`Zuletzt gemeldete Preise:<br>`:''}E5: ${price(x.prices?.e5)}<br>E10: ${price(x.prices?.e10)}<br>Diesel: ${price(x.prices?.diesel)}<br><br>${fetchedText()}<br>Daten: MTS-K über Tankerkönig · CC BY 4.0 · ausschließlich Verbraucherinformation.</div><div class="detail-actions"><button class="detail-more">Details</button><a class="detail-source" href="https://creativecommons.tankerkoenig.de/" target="_blank" rel="noopener noreferrer">Tankerkönig ↗</a></div>`;
+  bindDetail(box,x)
+}
 function bindDetail(box,x){const close=box.querySelector('.detail-close');if(close)close.onclick=()=>{box.classList.add('hidden');selected=null;render()};const more=box.querySelector('.detail-more');if(more)more.onclick=()=>{box.classList.toggle('expanded');more.textContent=box.classList.contains('expanded')?'Weniger':'Details'};box.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>openNavigation(b.dataset.nav,x))}
 function detailFreeViewport(){
   const mapEl=document.getElementById('map'),detail=document.getElementById('placeDetail');
@@ -204,4 +224,4 @@ map.on('load',()=>{const c=map.getCenter();if(!target)target={lat:c.lat,lon:c.ln
 function showInfo(){const box=document.getElementById('placeDetail'),reports=parkingReports(),entries=Object.entries(reports);box.className='place-detail expanded';box.innerHTML=`<div class="detail-top"><div><div class="type">INFO</div><div class="detail-title">Datenquellen</div></div><button class="detail-close">×</button></div><div class="info-copy"><strong>Kraftstoffpreise & Tankstellen</strong><br>MTS-K, bereitgestellt über Tankerkönig · CC BY 4.0. Verwendung ausschließlich zur Verbraucherinformation.<br><a href="https://creativecommons.tankerkoenig.de/" target="_blank" rel="noopener noreferrer">Tankerkönig ↗</a><br><br><strong>Parkplätze</strong><br>Deutschlandweite Basis: OpenStreetMap. Parkbedingungen und Beschilderung bitte vor Ort prüfen.<br><br><button type="button" class="pm2-reports-overview-btn">Gemeldete Parkplätze (${entries.length})</button><div id="pm2ReportsOverview"></div><br><strong>Karte</strong><br>OpenFreeMap / OpenStreetMap.</div>`;box.querySelector('.detail-close').onclick=()=>box.classList.add('hidden');box.querySelector('.pm2-reports-overview-btn').onclick=()=>showReportsOverview()}
 function showReportsOverview(){const host=document.getElementById('pm2ReportsOverview');if(!host)return;const reports=parkingReports(),entries=Object.entries(reports);if(!entries.length){host.innerHTML='<div class="pm2-reports-empty">Noch keine Parkplätze gemeldet.</div>';return}host.innerHTML=`<div class="pm2-reports-list">${entries.map(([id,r])=>{const x=parkingItems.find(p=>p.id===id),name=x?.name||parkingKindLabel({kind:x?.kind||'parking'}),osm=r.osmType&&r.osmId?`https://www.openstreetmap.org/${r.osmType}/${r.osmId}`:'';return `<div class="pm2-report-item"><strong>${name}</strong><span>${r.reason}</span><div>${x?`<button type="button" data-show-report="${id}">Auf Karte zeigen</button>`:''}${osm?`<a href="${osm}" target="_blank" rel="noopener noreferrer">OSM ↗</a>`:''}<button type="button" data-delete-report="${id}">Löschen</button></div></div>`}).join('')}</div>`;host.querySelectorAll('[data-show-report]').forEach(b=>b.onclick=()=>{const x=parkingItems.find(p=>p.id===b.dataset.showReport);if(!x)return;document.getElementById('placeDetail').classList.add('hidden');map.easeTo({center:[x.lon,x.lat],zoom:16});setTimeout(()=>selectParking(x.id),350)});host.querySelectorAll('[data-delete-report]').forEach(b=>b.onclick=()=>{deleteParkingReport(b.dataset.deleteReport);updateParkingMapLayer(parkingData());showReportsOverview()})}
 document.getElementById('infoBtn').onclick=showInfo;
-async function checkForUpdate(manual=false){const status=document.getElementById('updateStatus');if(manual){status.textContent='Suche nach Update …';status.classList.remove('hidden')}try{if(!('serviceWorker'in navigator))return;const reg=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('./sw.js?v=5.17',{updateViaCache:'none'});await reg.update();if(manual){status.textContent='v5.17 ist aktuell.';setTimeout(()=>status.classList.add('hidden'),2200)}}catch{if(manual)status.textContent='Updateprüfung fehlgeschlagen.'}}document.getElementById('updateBtn').onclick=()=>checkForUpdate(true);if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js?v=5.17',{updateViaCache:'none'}).then(reg=>{reg.update();setInterval(()=>reg.update(),30*60*1000)});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!window.__reloading){window.__reloading=true;location.reload()}})}
+async function checkForUpdate(manual=false){const status=document.getElementById('updateStatus');if(manual){status.textContent='Suche nach Update …';status.classList.remove('hidden')}try{if(!('serviceWorker'in navigator))return;const reg=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('./sw.js?v=5.18',{updateViaCache:'none'});await reg.update();if(manual){status.textContent='v5.18 ist aktuell.';setTimeout(()=>status.classList.add('hidden'),2200)}}catch{if(manual)status.textContent='Updateprüfung fehlgeschlagen.'}}document.getElementById('updateBtn').onclick=()=>checkForUpdate(true);if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js?v=5.18',{updateViaCache:'none'}).then(reg=>{reg.update();setInterval(()=>reg.update(),30*60*1000)});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!window.__reloading){window.__reloading=true;location.reload()}})}
