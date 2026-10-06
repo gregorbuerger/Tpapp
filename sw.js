@@ -1,12 +1,12 @@
-const CACHE='tank-park-v527';
+const CACHE='tank-park-v528';
 const ASSETS=[
   './index.html',
-  './styles.css?v=5.27',
-  './app.js?v=5.27',
-  './manifest.webmanifest?v=5.27',
-  './icon-192.png?v=5.27',
-  './icon-512.png?v=5.27',
-  './apple-touch-icon.png?v=5.27'
+  './styles.css?v=5.28',
+  './app.js?v=5.28',
+  './manifest.webmanifest?v=5.28',
+  './icon-192.png?v=5.28',
+  './icon-512.png?v=5.28',
+  './apple-touch-icon.png?v=5.28'
 ];
 self.addEventListener('install',e=>{
   self.skipWaiting();

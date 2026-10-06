@@ -173,3 +173,5 @@ body.search-active .searchbox .suggestions:empty{display:none}
   animation:parking-spin .8s linear infinite;
 }
 @keyframes parking-spin{to{transform:rotate(360deg)}}
+
+.parking-detail-hours{margin:8px 0 2px;font-size:13px;font-weight:650;color:#5f6b7a;line-height:1.4}
