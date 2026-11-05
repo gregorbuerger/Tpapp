@@ -114,16 +114,49 @@ async function loadParking(force=false){
   parkingLoading=true;parkingError='';parkingDiag={loaded:0,excluded:0,shown:0};setParkingLoadPill(true,isNewArea?'Parkplätze werden geladen …':'Parkplätze werden aktualisiert …');render();
   const q=`[out:json][timeout:20];(nwr["amenity"="parking"](around:${PARK_RADIUS_KM*1000},${lat},${lon});nwr["amenity"="parking_entrance"](around:${PARK_RADIUS_KM*1000},${lat},${lon}););out center tags;`;
   try{
-    let r;
-    try{
-      r=await fetch(OVERPASS,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(q),signal:parkingAbort.signal});
-    }catch(err){
-      if(err?.name==='AbortError')throw err;
-      throw new Error('Overpass POST: Netzwerkfehler ('+(err?.message||String(err))+')');
+    const endpoints=[OVERPASS,'https://overpass.private.coffee/api/interpreter'];
+    let j=null,lastError=null;
+    // One short retry for overload on the primary, then a bounded fallback.
+    for(let serverIndex=0;serverIndex<endpoints.length&&j===null;serverIndex++){
+      const maxAttempts=serverIndex===0?2:1;
+      for(let attempt=0;attempt<maxAttempts&&j===null;attempt++){
+        if(seq!==parkingSeq||parkingAbort.signal.aborted)return;
+        if(serverIndex>0)setParkingLoadPill(true,'Alternativen Parkplatzserver prüfen …');
+        else if(attempt>0)setParkingLoadPill(true,'Parkplatzserver ausgelastet · erneuter Versuch …');
+        const controller=new AbortController();
+        const onAbort=()=>controller.abort();
+        parkingAbort.signal.addEventListener('abort',onAbort,{once:true});
+        const timer=setTimeout(()=>controller.abort(),12000);
+        let retryable=false;
+        try{
+          const r=await fetch(endpoints[serverIndex],{
+            method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+            body:'data='+encodeURIComponent(q),signal:controller.signal
+          });
+          if(!r.ok){
+            lastError=new Error('Overpass '+(serverIndex+1)+': HTTP '+r.status);
+            retryable=[429,502,503,504].includes(r.status);
+            if(!retryable)break;
+          }else{
+            const result=await r.json();
+            if(!Array.isArray(result?.elements))throw new Error('Overpass '+(serverIndex+1)+': JSON ohne elements-Liste');
+            j=result;
+          }
+        }catch(err){
+          if(parkingAbort.signal.aborted||seq!==parkingSeq)return;
+          lastError=new Error('Overpass '+(serverIndex+1)+': '+(controller.signal.aborted?'Zeitüberschreitung':(err?.message||'Netzwerkfehler')));
+          retryable=true;
+        }finally{
+          clearTimeout(timer);
+          parkingAbort.signal.removeEventListener('abort',onAbort);
+        }
+        if(j!==null)break;
+        if(attempt+1<maxAttempts&&retryable){
+          await new Promise(resolve=>setTimeout(resolve,1200));
+        }else break;
+      }
     }
-    if(!r.ok)throw new Error('Overpass POST: HTTP '+r.status+' '+(r.statusText||'').trim());
-    let j;
-    try{j=await r.json()}catch(err){throw new Error('Overpass POST: Antwort ist kein gueltiges JSON ('+(err?.message||String(err))+')')}
+    if(j===null)throw lastError||new Error('Overpass-Server nicht erreichbar');
     if(seq!==parkingSeq)return;
     if(!Array.isArray(j?.elements))throw new Error('Overpass POST: JSON ohne elements-Liste');
     const els=j.elements;
@@ -291,4 +324,4 @@ map.on('load',()=>{const c=map.getCenter();if(!target)target={lat:c.lat,lon:c.ln
 function showInfo(){const box=document.getElementById('placeDetail'),reports=parkingReports(),entries=Object.entries(reports);box.className='place-detail expanded';box.innerHTML=`<div class="detail-top"><div><div class="type">INFO</div><div class="detail-title">Datenquellen</div></div><button class="detail-close">×</button></div><div class="info-copy"><strong>Kraftstoffpreise & Tankstellen</strong><br>MTS-K, bereitgestellt über Tankerkönig · CC BY 4.0. Verwendung ausschließlich zur Verbraucherinformation.<br><a href="https://creativecommons.tankerkoenig.de/" target="_blank" rel="noopener noreferrer">Tankerkönig ↗</a><br><br><strong>Parkplätze</strong><br>Deutschlandweite Basis: OpenStreetMap. Parkbedingungen und Beschilderung bitte vor Ort prüfen.<br><br><button type="button" class="pm2-reports-overview-btn">Gemeldete Parkplätze (${entries.length})</button><div id="pm2ReportsOverview"></div><br><strong>Karte</strong><br>OpenFreeMap / OpenStreetMap.</div>`;box.querySelector('.detail-close').onclick=()=>box.classList.add('hidden');box.querySelector('.pm2-reports-overview-btn').onclick=()=>showReportsOverview()}
 function showReportsOverview(){const host=document.getElementById('pm2ReportsOverview');if(!host)return;const reports=parkingReports(),entries=Object.entries(reports);if(!entries.length){host.innerHTML='<div class="pm2-reports-empty">Noch keine Parkplätze gemeldet.</div>';return}host.innerHTML=`<div class="pm2-reports-list">${entries.map(([id,r])=>{const x=parkingItems.find(p=>p.id===id),name=x?.name||parkingKindLabel({kind:x?.kind||'parking'}),osm=r.osmType&&r.osmId?`https://www.openstreetmap.org/${r.osmType}/${r.osmId}`:'';return `<div class="pm2-report-item"><strong>${name}</strong><span>${r.reason}</span><div>${x?`<button type="button" data-show-report="${id}">Auf Karte zeigen</button>`:''}${osm?`<a href="${osm}" target="_blank" rel="noopener noreferrer">OSM ↗</a>`:''}<button type="button" data-delete-report="${id}">Löschen</button></div></div>`}).join('')}</div>`;host.querySelectorAll('[data-show-report]').forEach(b=>b.onclick=()=>{const x=parkingItems.find(p=>p.id===b.dataset.showReport);if(!x)return;document.getElementById('placeDetail').classList.add('hidden');map.easeTo({center:[x.lon,x.lat],zoom:16});setTimeout(()=>selectParking(x.id),350)});host.querySelectorAll('[data-delete-report]').forEach(b=>b.onclick=()=>{deleteParkingReport(b.dataset.deleteReport);updateParkingMapLayer(parkingData());showReportsOverview()})}
 document.getElementById('infoBtn').onclick=showInfo;
-async function checkForUpdate(manual=false){const status=document.getElementById('updateStatus');if(manual){status.textContent='Suche nach Update …';status.classList.remove('hidden')}try{if(!('serviceWorker'in navigator))return;const reg=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('./sw.js?v=5.30',{updateViaCache:'none'});await reg.update();if(manual){status.textContent='v5.30 ist aktuell.';setTimeout(()=>status.classList.add('hidden'),2200)}}catch{if(manual)status.textContent='Updateprüfung fehlgeschlagen.'}}document.getElementById('updateBtn').onclick=()=>checkForUpdate(true);if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js?v=5.30',{updateViaCache:'none'}).then(reg=>{reg.update();setInterval(()=>reg.update(),30*60*1000)});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!window.__reloading){window.__reloading=true;location.reload()}})}
+async function checkForUpdate(manual=false){const status=document.getElementById('updateStatus');if(manual){status.textContent='Suche nach Update …';status.classList.remove('hidden')}try{if(!('serviceWorker'in navigator))return;const reg=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('./sw.js?v=5.31',{updateViaCache:'none'});await reg.update();if(manual){status.textContent='v5.31 ist aktuell.';setTimeout(()=>status.classList.add('hidden'),2200)}}catch{if(manual)status.textContent='Updateprüfung fehlgeschlagen.'}}document.getElementById('updateBtn').onclick=()=>checkForUpdate(true);if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js?v=5.31',{updateViaCache:'none'}).then(reg=>{reg.update();setInterval(()=>reg.update(),30*60*1000)});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!window.__reloading){window.__reloading=true;location.reload()}})}
